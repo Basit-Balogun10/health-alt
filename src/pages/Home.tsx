@@ -1,11 +1,11 @@
 import ThemeContext from 'contexts/ThemeContext'
 import React, { useState, useEffect, useContext } from 'react'
-import { BsMoon, BsSun, BsCamera } from 'react-icons/bs'
-import { HiOutlineMenu } from 'react-icons/hi'
+import { BsCamera } from 'react-icons/bs'
 import { IoSendSharp } from 'react-icons/io5'
+import { IoIosOptions } from 'react-icons/io'
 
 const HomePage = () => {
-  const { theme, _, toggleThemeMode } = useContext(ThemeContext)
+  const [sideMenuIsVisible, setSideMenuIsVisible] = useState(false)
 
   return (
     <div className="relative overflow-hidden">
@@ -20,10 +20,10 @@ const HomePage = () => {
         {/* Icons */}
         <div className="flex items-center space-x-4">
           <button
-            onClick={toggleThemeMode}
+            onClick={() => setSideMenuIsVisible(true)}
             className="rounded-full p-2 transition-colors hover:bg-gray-800 dark:hover:bg-gray-600"
           >
-            {theme === 'light' ? <BsSun size={24} /> : <BsMoon size={24} />}
+            <IoIosOptions size={24} />
           </button>
           {/* <HiOutlineMenu size={24} /> */}
         </div>
