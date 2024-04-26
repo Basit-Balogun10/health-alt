@@ -19,6 +19,11 @@ const HomePage = () => {
   })
 
   useEffect(() => {
+    const storedRememberData = localStorage.getItem('rememberData')
+    if (storedRememberData) {
+      setRememberData(JSON.parse(storedRememberData))
+    }
+
     const storedFormData = localStorage.getItem('formData')
     if (storedFormData) {
       console.log('Data: ', JSON.parse(storedFormData))
@@ -26,12 +31,16 @@ const HomePage = () => {
     }
   }, [])
 
-  const handleRememberDataChange = () => {
+  const handleRememberDataChange = (e) => {
+    e.preventDefault()
     setRememberData(!rememberData)
+    localStorage.setItem('rememberData', JSON.stringify(!rememberData))
 
     // Using the fact that setState actions are asynchronous (so remeberData won't be updated yet, hence using !rememberData)
     if (!rememberData) {
       localStorage.setItem('formData', JSON.stringify(formData))
+    } else {
+      localStorage.removeItem('formData')
     }
   }
 
@@ -62,8 +71,13 @@ const HomePage = () => {
     }
   }
 
+  const startConversationWithAI = () => {
+    // Do something with the form data
+    console.log('Form Data: ', formData)
+  }
+
   return (
-    <div className="relative overflow-hidden">
+    <div className="relative h-full overflow-hidden">
       <div
         className={`${
           sideMenuIsVisible ? 'w-2/3' : 'w-full'
@@ -105,13 +119,16 @@ const HomePage = () => {
             <input
               type="text"
               placeholder="What can I help you with"
-              className="w-full rounded-2xl border border-gray-300 py-4 pl-6 pr-24 outline-none transition-colors ease-in-out focus:outline-none focus:ring-2 focus:ring-teal-700 dark:border-teal-700 dark:bg-gray-800 dark:hover:border-teal-500"
+              className="w-full rounded-2xl border border-gray-300 py-4 pl-6 pr-24 outline-none transition-colors ease-in-out focus:outline-none focus:ring-2  focus:ring-teal-700 dark:border-teal-700 dark:bg-gray-800 dark:hover:border-teal-700"
             />
             <div className="absolute right-4 top-1/2 flex -translate-y-1/2 space-x-2">
-              <button className="rounded-lg px-3 py-2 dark:bg-gray-900">
+              <button className="rounded-lg border px-3 py-2 dark:border-teal-900/80 dark:bg-gray-900">
                 <BsCamera size={18} />
               </button>
-              <button className="flex items-center rounded-lg bg-teal-700 px-3 py-2 dark:bg-teal-700">
+              <button
+                onClick={startConversationWithAI}
+                className="flex items-center rounded-lg bg-teal-700 px-3 py-2 dark:bg-teal-700"
+              >
                 Start Chat <IoSendSharp size={18} className="ml-2" />
               </button>
             </div>
@@ -137,166 +154,164 @@ const HomePage = () => {
           {/* <h2 className="mb-4 text-center text-2xl font-medium">
             Health Information
           </h2> */}
-          <form>
-            <div className="mb-4">
-              <label htmlFor="allergies" className="mb-2 block">
-                Allergies
-              </label>
-              <input
-                type="text"
-                name="allergies"
-                value={formData.allergies}
-                placeholder="Ex. Peanuts, Groundnut oil (comma-separated)"
-                className="w-full rounded-lg border px-4 py-2 outline-none transition-colors ease-in-out focus:ring-2 focus:ring-teal-700 dark:border-teal-700 dark:bg-gray-900 dark:hover:border-teal-500"
-                onChange={handleFormChange}
-              />
-            </div>
+          <div className="mb-4">
+            <label htmlFor="allergies" className="mb-2 block">
+              Allergies
+            </label>
+            <input
+              type="text"
+              name="allergies"
+              value={formData.allergies}
+              placeholder="Ex. Peanuts, Groundnut oil (comma-separated)"
+              className="w-full rounded-lg border px-4 py-2 outline-none transition-colors ease-in-out focus:ring-2 focus:ring-teal-700 dark:bg-gray-800 dark:border-gray-800 dark:hover:border-teal-700"
+              onChange={handleFormChange}
+            />
+          </div>
 
-            <div className="mb-4">
-              <label htmlFor="healthConditions" className="mb-2 block">
-                Health Conditions
-              </label>
-              <input
-                type="text"
-                name="healthConditions"
-                value={formData.healthConditions}
-                placeholder="Ex. Diabetes, Heart Disease (comma-separated)"
-                className="w-full rounded-lg border px-4 py-2 outline-none transition-colors ease-in-out focus:ring-2 focus:ring-teal-700 dark:border-teal-700 dark:bg-gray-900 dark:hover:border-teal-500"
-                onChange={handleFormChange}
-              />
-            </div>
+          <div className="mb-4">
+            <label htmlFor="healthConditions" className="mb-2 block">
+              Health Conditions
+            </label>
+            <input
+              type="text"
+              name="healthConditions"
+              value={formData.healthConditions}
+              placeholder="Ex. Diabetes, Heart Disease (comma-separated)"
+              className="w-full rounded-lg border px-4 py-2 outline-none transition-colors ease-in-out focus:ring-2 focus:ring-teal-700 dark:bg-gray-800 dark:border-gray-800 dark:hover:border-teal-700"
+              onChange={handleFormChange}
+            />
+          </div>
 
-            <div className="mb-4">
-              <label htmlFor="dietaryPreference" className="mb-2 block">
-                Dietary Preference
-              </label>
-              <input
-                type="text"
-                name="dietaryPreference"
-                value={formData.dietaryPreference}
-                placeholder="Ex. Halal, Vegetarian, Vegan (comma-separated)"
-                className="w-full rounded-lg border px-4 py-2 outline-none transition-colors ease-in-out focus:ring-2 focus:ring-teal-700 dark:border-teal-700 dark:bg-gray-900 dark:hover:border-teal-500"
-                onChange={handleFormChange}
-              />
-            </div>
+          <div className="mb-4">
+            <label htmlFor="dietaryPreference" className="mb-2 block">
+              Dietary Preference
+            </label>
+            <input
+              type="text"
+              name="dietaryPreference"
+              value={formData.dietaryPreference}
+              placeholder="Ex. Halal, Vegetarian, Vegan (comma-separated)"
+              className="w-full rounded-lg border px-4 py-2 outline-none transition-colors ease-in-out focus:ring-2 focus:ring-teal-700 dark:bg-gray-800 dark:border-gray-800 dark:hover:border-teal-700"
+              onChange={handleFormChange}
+            />
+          </div>
 
-            <div className="mb-4">
-              <label htmlFor="fitnessLevel" className="mb-2 block">
-                Fitness Level
-              </label>
-              <div className="relative">
-                <button
-                  className={`w-full rounded-md border px-4 py-2 text-left transition-colors ease-in-out focus:ring-2 focus:ring-teal-700 dark:border-teal-700 dark:bg-gray-900 dark:hover:border-teal-500 ${
-                    !formData.fitnessLevel ? 'text-gray-300/80' : ''
-                  }`}
-                  onClick={() => {
-                    setFitnessLevelDropdownOpen(!fitnessLevelDropdownOpen)
-                  }}
-                >
-                  {capitalizeString(formData.fitnessLevel) ||
-                    'Select Fitness Level'}
-                </button>
-                <div className="absolute left-[90%] top-[0.55rem] w-full">
-                  <IoChevronDown size={24} className="text-teal-500" />
+          <div className="mb-4">
+            <label htmlFor="fitnessLevel" className="mb-2 block">
+              Fitness Level
+            </label>
+            <div className="relative">
+              <button
+                className={`w-full rounded-md border px-4 py-2 text-left transition-colors ease-in-out focus:ring-2 focus:ring-teal-700 dark:bg-gray-800 dark:border-gray-800 dark:hover:border-teal-700 ${
+                  !formData.fitnessLevel ? 'text-gray-300/80' : ''
+                }`}
+                onClick={() => {
+                  setFitnessLevelDropdownOpen(!fitnessLevelDropdownOpen)
+                }}
+              >
+                {capitalizeString(formData.fitnessLevel) ||
+                  'Select Fitness Level'}
+              </button>
+              <div className="absolute left-[90%] top-[0.55rem] w-full">
+                <IoChevronDown size={24} className="text-teal-500" />
+              </div>
+              {fitnessLevelDropdownOpen && (
+                <div className="absolute left-0 top-14 w-full rounded-md border border-gray-300 bg-white shadow-md ring-2 ring-teal-700 dark:border-teal-700 dark:bg-gray-800">
+                  <button
+                    className={`w-full rounded-md px-4 py-2 hover:rounded-none hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-teal-700`}
+                    onClick={() => handleFitnessLevelChange('sedentary')}
+                  >
+                    Sedentary (Little or no exercise)
+                  </button>
+                  <button
+                    className={`w-full rounded-md px-4 py-2 hover:rounded-none hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-teal-700`}
+                    onClick={() => handleFitnessLevelChange('moderate')}
+                  >
+                    Moderate (Exercise 3-5 days/week)
+                  </button>
+                  <button
+                    className={`w-full rounded-md px-4 py-2 hover:rounded-none hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-teal-700`}
+                    onClick={() => handleFitnessLevelChange('active')}
+                  >
+                    Active (Exercise 6-7 days/week)
+                  </button>
+                  <button
+                    className={`w-full rounded-md px-4 py-2 hover:rounded-none hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-teal-700`}
+                    onClick={() => handleFitnessLevelChange('veryActive')}
+                  >
+                    Very Active (Exercise multiple times per day)
+                  </button>
                 </div>
-                {fitnessLevelDropdownOpen && (
-                  <div className="absolute left-0 top-14 w-full rounded-md border border-gray-300 bg-white shadow-md ring-2 ring-teal-700 dark:border-teal-700 dark:bg-gray-800">
-                    <button
-                      className={`w-full rounded-md px-4 py-2 hover:rounded-none hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-teal-700`}
-                      onClick={() => handleFitnessLevelChange('sedentary')}
-                    >
-                      Sedentary (Little or no exercise)
-                    </button>
-                    <button
-                      className={`w-full rounded-md px-4 py-2 hover:rounded-none hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-teal-700`}
-                      onClick={() => handleFitnessLevelChange('moderate')}
-                    >
-                      Moderate (Exercise 3-5 days/week)
-                    </button>
-                    <button
-                      className={`w-full rounded-md px-4 py-2 hover:rounded-none hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-teal-700`}
-                      onClick={() => handleFitnessLevelChange('active')}
-                    >
-                      Active (Exercise 6-7 days/week)
-                    </button>
-                    <button
-                      className={`w-full rounded-md px-4 py-2 hover:rounded-none hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-teal-700`}
-                      onClick={() => handleFitnessLevelChange('veryActive')}
-                    >
-                      Very Active (Exercise multiple times per day)
-                    </button>
-                  </div>
+              )}
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <label htmlFor="dietGoal" className="mb-2 block">
+              Diet Goal
+            </label>
+            <input
+              type="text"
+              name="dietGoal"
+              value={formData.dietGoal}
+              placeholder="Enter your diet goal"
+              className="w-full rounded-lg border px-4 py-2 outline-none transition-colors ease-in-out focus:ring-2 focus:ring-teal-700 dark:bg-gray-800 dark:border-gray-800 dark:hover:border-teal-700"
+              onChange={handleFormChange}
+            />
+          </div>
+          <div className="mb-4">
+            <label htmlFor="lifeStage" className="mb-2 block">
+              Life Stage
+            </label>
+            <input
+              type="text"
+              name="lifeStage"
+              value={formData.lifeStage}
+              placeholder="Ex. Pregnancy, Elderly, Menstrual Period, Nursing"
+              className="w-full rounded-lg border px-4 py-2 outline-none transition-colors ease-in-out focus:ring-2 focus:ring-teal-700 dark:bg-gray-800 dark:border-gray-800 dark:hover:border-teal-700"
+              onChange={handleFormChange}
+            />
+          </div>
+
+          <div className="m space-y-1">
+            <p className="text-center text-xs text-gray-300/80">
+              Your data is safe and only stored on your device
+            </p>
+            <div className="flex items-center justify-center">
+              <input
+                type="checkbox"
+                id="rememberData"
+                name="rememberData"
+                checked={rememberData}
+                onChange={handleRememberDataChange}
+                className="sr-only mr-2" // Hide the default checkbox
+              />
+              <label
+                htmlFor="rememberData"
+                className={`relative mr-2 size-4 cursor-pointer rounded-[0.18rem] border border-teal-700 ${
+                  rememberData ? 'bg-teal-700' : 'bg-transparent'
+                }`}
+              >
+                {rememberData && (
+                  <svg
+                    className="absolute left-1/2 top-1/2 w-4 -translate-x-1/2 -translate-y-1/2 text-white"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      fill="currentColor"
+                      d="M9 16.2l-4.6-4.6 1.4-1.4 3.2 3.2 7.2-7.2 1.4 1.4-8.6 8.6z"
+                    />
+                  </svg>
                 )}
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <label htmlFor="dietGoal" className="mb-2 block">
-                Diet Goal
               </label>
-              <input
-                type="text"
-                name="dietGoal"
-                value={formData.dietGoal}
-                placeholder="Enter your diet goal"
-                className="w-full rounded-lg border px-4 py-2 outline-none transition-colors ease-in-out focus:ring-2 focus:ring-teal-700 dark:border-teal-700 dark:bg-gray-900 dark:hover:border-teal-500"
-                onChange={handleFormChange}
-              />
+              <button
+                onClick={handleRememberDataChange}
+                className="text-teal-500"
+              >
+                Remember my data
+              </button>
             </div>
-            <div className="mb-4">
-              <label htmlFor="lifeStage" className="mb-2 block">
-                Life Stage
-              </label>
-              <input
-                type="text"
-                name="lifeStage"
-                value={formData.lifeStage}
-                placeholder="Ex. Pregnancy, Elderly, Menstrual Period, Nursing"
-                className="w-full rounded-lg border px-4 py-2 outline-none transition-colors ease-in-out focus:ring-2 focus:ring-teal-700 dark:border-teal-700 dark:bg-gray-900 dark:hover:border-teal-500"
-                onChange={handleFormChange}
-              />
-            </div>
-
-            <div className="m space-y-1">
-              <p className="text-center text-xs text-gray-300/80">
-                Your data is safe and only stored on your device
-              </p>
-              <div className="flex items-center justify-center">
-                <input
-                  type="checkbox"
-                  id="rememberData"
-                  name="rememberData"
-                  checked={rememberData}
-                  onChange={handleRememberDataChange}
-                  className="sr-only mr-2" // Hide the default checkbox
-                />
-                <label
-                  htmlFor="rememberData"
-                  className={`relative mr-2 size-4 cursor-pointer rounded-[0.18rem] border border-teal-700 ${
-                    rememberData ? 'bg-teal-700' : 'bg-transparent'
-                  }`}
-                >
-                  {rememberData && (
-                    <svg
-                      className="absolute left-1/2 top-1/2 w-4 -translate-x-1/2 -translate-y-1/2 text-white"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        fill="currentColor"
-                        d="M9 16.2l-4.6-4.6 1.4-1.4 3.2 3.2 7.2-7.2 1.4 1.4-8.6 8.6z"
-                      />
-                    </svg>
-                  )}
-                </label>
-                <button
-                  onClick={handleRememberDataChange}
-                  className="text-teal-500"
-                >
-                  Remember my data
-                </button>
-              </div>
-            </div>
-          </form>
+          </div>
         </div>
       </div>
     </div>
