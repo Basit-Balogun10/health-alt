@@ -3,10 +3,70 @@ import { BsCamera } from 'react-icons/bs'
 import { IoIosOptions } from 'react-icons/io'
 import { IoSendSharp, IoCloseSharp, IoChevronDown } from 'react-icons/io5'
 import { capitalizeString } from 'utils'
+import Anthropic from '@anthropic-ai/sdk'
+
+const anthropic = new Anthropic({
+  apiKey: import.meta.env.VITE_CLAUDE_API_KEY
+})
 
 const HomePage = () => {
   const [sideMenuIsVisible, setSideMenuIsVisible] = useState(true)
   const [rememberData, setRememberData] = useState(false)
+  const systemMessage = `INTRO:
+The primary input from users is their health info (details later) and the meal/junk input. We need to do the following:
+
+1) Recommend healthier alternatives to the input meal/junk food based on the nutritional content etc.
+2) Each alternative should include the recipe, ingredients and comparison to the input meal/junk
+
+HEALTH INFO:
+The health info can include:
+- Allergies or intolerances
+- Diet goals: Weight loss or gain, Muscle building
+- Dietary Preference: Halal, Vegetarian / Vegan
+- Health conditions: Diabetes, High blood pressure, Heart disease, Amaenia
+- Fitness Levels or activity: Sedentary or active athletes etc.
+- Life stage: Pregnancy, Breastfeeding, childhood, Elderly, menstrual period etc.
+
+
+RESPONSE FORMAT:
+
+- Do not respond with any extra text outside of the JSON response. Your output should only be JSON
+
+- First field in response should be the analysis of the meal/junk before proceeding with the alternatives. Just briefly discuss the nutritional content and the comparison of the meal/junk to the user health record (if provided any)
+
+- Each alternative should have a name, ingredients, recipe and comparison field
+
+- Separate each alternative from the other - including their recipes, ingredients and comparison.
+
+- List ingredients and recipe as an array
+
+- Let's indicate why we are recommending such an alternative based on users' health info. We let them know which one of their health info are taken into consideration AND HOW IT COMPARES WITH THE JUNK OR MEAL INPUT
+
+GUIDELINES:
+1) Do not respond to anything outside of food-health, return a js object of the type: { error: string }
+2) If there are no health info provided, just analyze the junk/meal generally for the pros/cons etc. based on it's content and nutritional benefits
+3) If there are no junk/meal provided, provide the user with a daily meal plan (for all 7 days of the week) based on their health info
+4) The users are Nigerians, so only recommend Nigerian healthier meals/dishes/snacks 
+5) Do not shorten words like tablespoons, etc.
+5) Be empathetic to users like a doctor! Make use of pronouns like "your", "you"
+6) Lastly, In comparison, do well to break down medical terms to LAYMAN understanding. If there are implications or anything, use easily-relatable explanations for the readers
+
+INPUT FORMAT:
+The meal/junk to analyze or suggest alternatives to is the meal property. 
+{
+  "allergies": string,
+  "dietGoal": string,
+  "dietaryPreference": string,
+  "healthConditions": string,
+  "fitnessLevel": string,
+  "lifeStage": string,
+  "meal": string,
+}
+
+Allergies, dietaryPreference, healthConditions and lifeStage being comma separated strings`
+  const [messages, setMessages] = useState([
+    { role: 'system', content: systemMessage }
+  ])
   const [fitnessLevelDropdownOpen, setFitnessLevelDropdownOpen] =
     useState(false)
   const [formData, setFormData] = useState({
@@ -15,7 +75,8 @@ const HomePage = () => {
     dietaryPreference: '',
     healthConditions: '',
     fitnessLevel: '',
-    lifeStage: ''
+    lifeStage: '',
+    meal: ''
   })
 
   useEffect(() => {
@@ -71,9 +132,65 @@ const HomePage = () => {
     }
   }
 
-  const startConversationWithAI = () => {
-    // Do something with the form data
-    console.log('Form Data: ', formData)
+  const validateForm = () => {
+    const {
+      meal,
+      allergies,
+      dietGoal,
+      dietaryPreference,
+      healthConditions,
+      fitnessLevel,
+      lifeStage
+    } = formData
+
+    if (!meal.trim()) {
+      return false
+    }
+
+    if (
+      !allergies.trim() &&
+      !dietGoal.trim() &&
+      !dietaryPreference.trim() &&
+      !healthConditions.trim() &&
+      !fitnessLevel.trim() &&
+      !lifeStage.trim()
+    ) {
+      return false
+    }
+
+    return true
+  }
+
+  const startConversationWithAI = async () => {
+    // Ensure that the meal input is not empty and at least one health info is provided
+    const formIsValid = validateForm()
+
+    if (formIsValid) {
+      
+      console.log('Remember Data: ', rememberData)
+
+      // Start the conversation with the AI
+      const newMessage = { role: 'user', content: JSON.stringify(formData) }
+      const msg = await anthropic.messages.create({
+        model: 'claude-3-opus-20240229',
+        max_tokens: 300,
+        messages: [...messages, newMessage]
+      })
+
+      console.log('Response: ', msg)
+
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        {
+          role: 'assistant',
+          content: msg
+        }
+      ])
+    } else {
+      alert(
+        "Please provide your health information to help you better. We don't know you, your data is safe and doesn't leave your device"
+      )
+    }
   }
 
   return (
@@ -117,6 +234,9 @@ const HomePage = () => {
           {/* Input section */}
           <div className="relative">
             <input
+              value={formData.meal}
+              onChange={handleFormChange}
+              name="meal"
               type="text"
               placeholder="What can I help you with"
               className="w-full rounded-2xl border border-gray-300 py-4 pl-6 pr-24 outline-none transition-colors ease-in-out focus:outline-none focus:ring-2  focus:ring-teal-700 dark:border-teal-700 dark:bg-gray-800 dark:hover:border-teal-700"
@@ -129,7 +249,7 @@ const HomePage = () => {
                 onClick={startConversationWithAI}
                 className="flex items-center rounded-lg bg-teal-700 px-3 py-2 dark:bg-teal-700"
               >
-                Start Chat <IoSendSharp size={18} className="ml-2" />
+                Eat Healthier <IoSendSharp size={18} className="ml-2" />
               </button>
             </div>
           </div>
@@ -150,7 +270,7 @@ const HomePage = () => {
             <IoCloseSharp size={24} className="text-teal-500" />
           </button>
         </div>
-        <div className="mt-[4.2rem px-4">
+        <div className="px-4">
           {/* <h2 className="mb-4 text-center text-2xl font-medium">
             Health Information
           </h2> */}
@@ -163,7 +283,7 @@ const HomePage = () => {
               name="allergies"
               value={formData.allergies}
               placeholder="Ex. Peanuts, Groundnut oil (comma-separated)"
-              className="w-full rounded-lg border px-4 py-2 outline-none transition-colors ease-in-out focus:ring-2 focus:ring-teal-700 dark:bg-gray-800 dark:border-gray-800 dark:hover:border-teal-700"
+              className="w-full rounded-lg  border px-4 py-2 outline-none transition-colors ease-in-out placeholder:text-gray-300/40 focus:ring-2 focus:ring-teal-700 dark:border-gray-800 dark:bg-gray-800 dark:hover:border-teal-700"
               onChange={handleFormChange}
             />
           </div>
@@ -177,7 +297,7 @@ const HomePage = () => {
               name="healthConditions"
               value={formData.healthConditions}
               placeholder="Ex. Diabetes, Heart Disease (comma-separated)"
-              className="w-full rounded-lg border px-4 py-2 outline-none transition-colors ease-in-out focus:ring-2 focus:ring-teal-700 dark:bg-gray-800 dark:border-gray-800 dark:hover:border-teal-700"
+              className="w-full rounded-lg  border px-4 py-2 outline-none transition-colors ease-in-out placeholder:text-gray-300/40 focus:ring-2 focus:ring-teal-700 dark:border-gray-800 dark:bg-gray-800 dark:hover:border-teal-700"
               onChange={handleFormChange}
             />
           </div>
@@ -191,7 +311,7 @@ const HomePage = () => {
               name="dietaryPreference"
               value={formData.dietaryPreference}
               placeholder="Ex. Halal, Vegetarian, Vegan (comma-separated)"
-              className="w-full rounded-lg border px-4 py-2 outline-none transition-colors ease-in-out focus:ring-2 focus:ring-teal-700 dark:bg-gray-800 dark:border-gray-800 dark:hover:border-teal-700"
+              className="w-full rounded-lg border px-4 py-2 outline-none transition-colors ease-in-out placeholder:text-gray-300/40 focus:ring-2 focus:ring-teal-700 dark:border-gray-800 dark:bg-gray-800 dark:hover:border-teal-700"
               onChange={handleFormChange}
             />
           </div>
@@ -202,8 +322,8 @@ const HomePage = () => {
             </label>
             <div className="relative">
               <button
-                className={`w-full rounded-md border px-4 py-2 text-left transition-colors ease-in-out focus:ring-2 focus:ring-teal-700 dark:bg-gray-800 dark:border-gray-800 dark:hover:border-teal-700 ${
-                  !formData.fitnessLevel ? 'text-gray-300/80' : ''
+                className={`w-full rounded-md border px-4 py-2 text-left transition-colors ease-in-out focus:ring-2 focus:ring-teal-700 dark:border-gray-800 dark:bg-gray-800 dark:hover:border-teal-700 ${
+                  !formData.fitnessLevel ? ' text-gray-300/40' : ''
                 }`}
                 onClick={() => {
                   setFitnessLevelDropdownOpen(!fitnessLevelDropdownOpen)
@@ -255,7 +375,7 @@ const HomePage = () => {
               name="dietGoal"
               value={formData.dietGoal}
               placeholder="Enter your diet goal"
-              className="w-full rounded-lg border px-4 py-2 outline-none transition-colors ease-in-out focus:ring-2 focus:ring-teal-700 dark:bg-gray-800 dark:border-gray-800 dark:hover:border-teal-700"
+              className="w-full rounded-lg  border px-4 py-2 outline-none transition-colors ease-in-out placeholder:text-gray-300/40 focus:ring-2 focus:ring-teal-700 dark:border-gray-800 dark:bg-gray-800 dark:hover:border-teal-700"
               onChange={handleFormChange}
             />
           </div>
@@ -268,7 +388,7 @@ const HomePage = () => {
               name="lifeStage"
               value={formData.lifeStage}
               placeholder="Ex. Pregnancy, Elderly, Menstrual Period, Nursing"
-              className="w-full rounded-lg border px-4 py-2 outline-none transition-colors ease-in-out focus:ring-2 focus:ring-teal-700 dark:bg-gray-800 dark:border-gray-800 dark:hover:border-teal-700"
+              className="w-full rounded-lg  border px-4 py-2 outline-none transition-colors ease-in-out placeholder:text-gray-300/40 focus:ring-2 focus:ring-teal-700 dark:border-gray-800 dark:bg-gray-800 dark:hover:border-teal-700"
               onChange={handleFormChange}
             />
           </div>
