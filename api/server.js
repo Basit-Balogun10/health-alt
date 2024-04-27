@@ -3,6 +3,8 @@ import { fileURLToPath } from "url";
 import path, { dirname } from "path";
 import dotenv from "dotenv";
 import apiRouter from "./router.js";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const initializeExpressServer = async () => {
     dotenv.config();
@@ -15,24 +17,11 @@ const initializeExpressServer = async () => {
     app.use("/api/v1/ai-conversation", apiRouter);
 
     if (process.env.NODE_ENV === "production") {
-        const __filename = fileURLToPath(import.meta.url);
-        const __dirname = dirname(__filename);
-
-        app.use(
-            express.static(
-                path.join(__dirname.replace("/var", ""), "../frontend/dist")
-            )
-        );
+        app.use(express.static(path.join(__dirname, "../frontend/dist")));
 
         app.get("*", (req, res) =>
             res.sendFile(
-                path.resolve(
-                    __dirname.replace("/var", ""),
-                    "../",
-                    "frontend",
-                    "dist",
-                    "index.html"
-                )
+                path.resolve(__dirname, "../", "frontend", "dist", "index.html")
             )
         );
     } else {
