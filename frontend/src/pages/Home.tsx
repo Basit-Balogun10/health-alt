@@ -651,7 +651,7 @@ const HomePage: React.FC = () => {
 
       {/* Side Menu */}
       <div
-        className={`fixed right-0 top-0 h-screen w-1/3 border-l-2 border-l-gray-700 shadow-black/30 px-6 shadow-lg transition-transform duration-300 dark:bg-gray-900 ${
+        className={`flex flex-col justify-center fixed right-0 top-0 h-screen w-1/3 border-l-2 border-l-gray-700 shadow-black/30 px-6 shadow-lg transition-transform duration-300 dark:bg-gray-900 ${
           sideMenuIsVisible ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
