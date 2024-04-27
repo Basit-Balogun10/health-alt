@@ -11,6 +11,7 @@ import {
   FaChevronRight
 } from 'react-icons/fa6'
 import { capitalizeString } from 'utils'
+import localData from 'cache'
 
 interface FormData {
   allergies: string
@@ -103,6 +104,13 @@ const HomePage: React.FC = () => {
   const [latestAIResponse, setLatestAIResponse] = useState<AIResponse | null>(
     null
   )
+
+  const cachedMeals = [
+    'fried puff puff',
+    'shawarma',
+    'jam doughnut',
+    'milky doughnut'
+  ]
 
   const handleBuyIngredients = () => {
     console.log(
@@ -264,8 +272,17 @@ const HomePage: React.FC = () => {
     const formIsValid = validateForm()
 
     if (formIsValid) {
+      if (cachedMeals.includes(formData.meal.toLowerCase())) {
+        console.log(
+          'Loading from cache: ',
+          localData[formData.meal.toLowerCase()]
+        )
+        setLatestAIResponse(localData[formData.meal.toLowerCase()])
+
+        return
+      }
       setIsFetchingResponse(true)
-      console.log('Remember Data: ', rememberData)
+      console.log('Form data: ', formData)
 
       const newMessage = { role: 'user', content: JSON.stringify(formData) }
 
@@ -274,8 +291,6 @@ const HomePage: React.FC = () => {
           messageHistory: [...messages, newMessage]
         })
 
-        console.log('Response: ', JSON.parse(response.data.msg.content[0].text))
-
         if (JSON.parse(response.data.msg.content[0].text)?.error) {
           alert('Your input has no relation with food health')
         }
@@ -283,16 +298,11 @@ const HomePage: React.FC = () => {
           JSON.parse(response.data.msg.content[0].text)
         )
 
+        console.log('Parsed Response: ', aiResponse)
+
         setLatestAIResponse(aiResponse)
 
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          {
-            role: 'assistant',
-            content: JSON.parse(response.data.msg.content[0].text)
-          }
-        ])
-        // setLatestAIResponse(JSON.parse(response.data.msg.content[0].text))
+        setMessages([])
       } catch (error) {
         console.error(error)
         alert(
@@ -309,7 +319,7 @@ const HomePage: React.FC = () => {
   }
 
   return (
-    <div className="relative flex flex-col items-start justify-center h-full overflow-hidden">
+    <div className="relative flex flex-col items-start justify-center h-full overflow-y-scroll">
       <div
         className={`my-auto ${
           sideMenuIsVisible ? 'w-2/3' : 'w-full'
@@ -353,7 +363,7 @@ const HomePage: React.FC = () => {
               onChange={handleFormChange}
               name="meal"
               type="text"
-              placeholder="What's junk am I helping you with today?"
+              placeholder="What junk am I helping you with today?"
               className="w-full rounded-2xl border border-gray-300 py-4 pl-6 pr-24 outline-none transition-colors ease-in-out focus:outline-none focus:ring-2  focus:ring-teal-700 dark:border-teal-800 dark:bg-gray-800 dark:hover:border-teal-700"
             />
             <div className="absolute right-4 top-1/2 flex -translate-y-1/2 space-x-2">
