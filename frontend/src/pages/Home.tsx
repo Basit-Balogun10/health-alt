@@ -1,16 +1,127 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
+import { ClipLoader } from 'react-spinners'
 import { BsCamera } from 'react-icons/bs'
 import { IoIosOptions } from 'react-icons/io'
 import { IoSendSharp, IoCloseSharp, IoChevronDown } from 'react-icons/io5'
-import { FaArrowLeftLong, FaArrowRightLong } from 'react-icons/fa6'
+import {
+  FaArrowLeftLong,
+  FaArrowRightLong,
+  FaChevronDown,
+  FaChevronRight
+} from 'react-icons/fa6'
 import { capitalizeString } from 'utils'
 
 const HomePage = () => {
   const [sideMenuIsVisible, setSideMenuIsVisible] = useState(true)
   const [rememberData, setRememberData] = useState(false)
+  const [isFetchingResponse, setIsFetchingResponse] = useState(false)
   const [messages, setMessages] = useState([])
-  const [latestAIResponse, setLatestAIResponse] = useState('')
+  const [activeTab, setActiveTab] = useState('alternatives')
+  const [currentAlternativeIndex, setCurrentAlternativeIndex] = useState(0)
+  const [latestAIResponse, setLatestAIResponse] = useState(null)
+  // const [latestAIResponse, setLatestAIResponse] = useState({
+  //   overview:
+  //     'A milky doughnut is a high-calorie, sugary snack that provides little nutritional value. It is high in refined carbohydrates and saturated fats, which can contribute to weight gain and negatively impact blood sugar control for individuals with diabetes. Additionally, the high sugar content may worsen menstrual cramps and discomfort during menstruation.',
+  //   alternatives: [
+  //     {
+  //       name: 'Oatmeal Pancakes with Banana and Honey',
+  //       ingredients: [
+  //         '1 cup oat flour',
+  //         '1 ripe banana, mashed',
+  //         '2 eggs',
+  //         '1/2 cup milk (dairy or plant-based)',
+  //         '1 tablespoon honey',
+  //         '1 teaspoon baking powder',
+  //         '1/2 teaspoon cinnamon',
+  //         'Pinch of salt'
+  //       ],
+  //       recipe: [
+  //         'In a bowl, mix together the oat flour, baking powder, cinnamon, and salt.',
+  //         'In another bowl, whisk together the mashed banana, eggs, milk, and honey.',
+  //         'Pour the wet ingredients into the dry ingredients and mix until well combined.',
+  //         'Heat a non-stick pan over medium heat and scoop 1/4 cup of batter per pancake.',
+  //         'Cook for 2-3 minutes on each side or until golden brown.',
+  //         'Serve warm with additional sliced banana and a drizzle of honey, if desired.'
+  //       ],
+  //       comparison:
+  //         'These oatmeal pancakes are a healthier alternative to a milky doughnut. Oats are a whole grain that provides fiber, which can help with weight management and blood sugar control. The use of a ripe banana adds natural sweetness and reduces the need for added sugars. This recipe is also suitable for your halal dietary preference. During menstruation, the combination of complex carbohydrates and protein can help stabilize energy levels and reduce cravings for sugary snacks.'
+  //     },
+  //     {
+  //       name: 'Baked Sweet Potato Wedges with Avocado Dip',
+  //       ingredients: [
+  //         '2 medium sweet potatoes, cut into wedges',
+  //         '1 tablespoon olive oil',
+  //         '1/2 teaspoon paprika',
+  //         'Salt and pepper to taste',
+  //         '1 ripe avocado',
+  //         '1/4 cup plain Greek yogurt',
+  //         '1 tablespoon lemon juice',
+  //         '1 small garlic clove, minced'
+  //       ],
+  //       recipe: [
+  //         'Preheat the oven to 200°C (400°F).',
+  //         'In a bowl, toss the sweet potato wedges with olive oil, paprika, salt, and pepper.',
+  //         'Arrange the wedges on a baking sheet and bake for 25-30 minutes, flipping halfway through, until crispy and tender.',
+  //         'In a separate bowl, mash the avocado and mix in the Greek yogurt, lemon juice, garlic, and a pinch of salt.',
+  //         'Serve the baked sweet potato wedges with the avocado dip on the side.'
+  //       ],
+  //       comparison:
+  //         "Baked sweet potato wedges are a nutrient-dense snack option compared to a milky doughnut. Sweet potatoes are rich in fiber, vitamins A and C, and have a lower glycemic index, which means they won't spike your blood sugar as quickly. The addition of a healthy fat source like avocado can help with satiety and nutrient absorption. Greek yogurt provides protein and probiotics, which may be beneficial for digestive health during menstruation. This snack is also halal-friendly and can support your weight loss goals and active lifestyle."
+  //     }
+  //   ]
+  // })
+
+  const handleBuyIngredients = () => {
+    console.log(
+      'Buy ingredients:',
+      latestAIResponse.alternatives[currentAlternativeIndex]
+    )
+
+    
+  }
+
+  const handleBuyAlternative = () => {
+    console.log(
+      'Buy alternative:',
+      latestAIResponse.alternatives[currentAlternativeIndex]
+    )
+  }
+
+  const toggleSection = (section) => {
+    console.log('toggling...', section)
+    setLatestAIResponse((prevState) => ({
+      ...prevState,
+      alternatives: prevState.alternatives.map((alternative, index) => {
+        if (index === currentAlternativeIndex) {
+          console.log(index, currentAlternativeIndex)
+
+          console.log('section: ', alternative, alternative[section].isOpen)
+          return {
+            ...alternative,
+            [section]: {
+              ...alternative[section],
+              ...{ isOpen: !alternative[section].isOpen }
+            }
+          }
+        }
+        return alternative
+      })
+    }))
+  }
+
+  // useEffect(() => {
+  //   setLatestAIResponse((prevState) => ({
+  //     ...prevState,
+  //     alternatives: prevState.alternatives.map((alternative) => ({
+  //       ...alternative,
+  //       comparison: { isOpen: false, content: alternative.comparison },
+  //       ingredients: { isOpen: false, content: alternative.ingredients },
+  //       recipe: { isOpen: false, content: alternative.recipe }
+  //     }))
+  //   }))
+  // }, [])
+
   const [fitnessLevelDropdownOpen, setFitnessLevelDropdownOpen] =
     useState(false)
   const [formData, setFormData] = useState({
@@ -110,6 +221,7 @@ const HomePage = () => {
     const formIsValid = validateForm()
 
     if (formIsValid) {
+      setIsFetchingResponse(true)
       console.log('Remember Data: ', rememberData)
 
       // Start the conversation with the AI
@@ -135,6 +247,8 @@ const HomePage = () => {
         alert(
           'We encountered a problem while trying to recommend your healthier dishes. Please try again later'
         )
+      } finally {
+        setIsFetchingResponse(false)
       }
     } else {
       alert(
@@ -144,9 +258,9 @@ const HomePage = () => {
   }
 
   return (
-    <div className="relative h-full overflow-hidden">
+    <div className="relative flex flex-col items-start justify-center h-full overflow-hidden">
       <div
-        className={`${
+        className={`my-auto ${
           sideMenuIsVisible ? 'w-2/3' : 'w-full'
         } flex-col items-center justify-center`}
       >
@@ -160,7 +274,7 @@ const HomePage = () => {
             </h1>
           </div>
           {!sideMenuIsVisible && (
-            <div className="flex items-center space-x-4">
+            <div className="absolute top-2 right-0 flex items-center space-x-4">
               <button
                 onClick={() => setSideMenuIsVisible(true)}
                 className="rounded-full p-2 transition-colors ease-in-out hover:bg-gray-800 dark:bg-teal-700 dark:hover:bg-teal-600"
@@ -173,9 +287,9 @@ const HomePage = () => {
 
         {/* B. Next section */}
         <div
-          className={`mx-auto ${
+          className={`h-full mx-auto ${
             sideMenuIsVisible ? 'w-3/4' : 'w-1/2'
-          } space-y-6 px-4`}
+          } space-y-4 px-4`}
         >
           {/* Greeting */}
           <h2 className="text-center text-4xl font-medium">
@@ -189,45 +303,232 @@ const HomePage = () => {
               name="meal"
               type="text"
               placeholder="What can I help you with"
-              className="w-full rounded-2xl border border-gray-300 py-4 pl-6 pr-24 outline-none transition-colors ease-in-out focus:outline-none focus:ring-2  focus:ring-teal-700 dark:border-teal-700 dark:bg-gray-800 dark:hover:border-teal-700"
+              className="w-full rounded-2xl border border-gray-300 py-4 pl-6 pr-24 outline-none transition-colors ease-in-out focus:outline-none focus:ring-2  focus:ring-teal-700 dark:border-teal-800 dark:bg-gray-800 dark:hover:border-teal-700"
             />
             <div className="absolute right-4 top-1/2 flex -translate-y-1/2 space-x-2">
-              <button className="rounded-lg border px-3 py-2 dark:border-teal-900/80 dark:bg-gray-900">
+              <button
+                disabled={isFetchingResponse}
+                className="rounded-lg border px-3 py-2 dark:border-teal-900/80 dark:bg-gray-900"
+              >
                 <BsCamera size={18} />
               </button>
               <button
+                disabled={isFetchingResponse}
                 onClick={startConversationWithAI}
-                className="flex items-center rounded-lg bg-teal-700 px-3 py-2 dark:bg-teal-700"
+                className={`flex items-center rounded-lg text-white bg-teal-700 px-3 py-2 transition-colors ease-in-out dark:bg-teal-500 dark:hover:bg-teal-600 ${
+                  isFetchingResponse ? 'opacity-70' : ''
+                }`}
               >
-                Eat Healthier <IoSendSharp size={18} className="ml-2" />
+                <span className="mt-0.5">healthALT</span>
+                {isFetchingResponse ? (
+                  <ClipLoader
+                    color={'#FFF'}
+                    loading={isFetchingResponse}
+                    size={18}
+                    className="ml-2"
+                  />
+                ) : (
+                  <IoSendSharp size={18} className="ml-2" />
+                )}
               </button>
             </div>
           </div>
 
           {latestAIResponse && (
-            <div>
-              <div className="bg-gray-800 rounded-md border border-gray-300/50">
-                {/* CONTENT HERE */}
-              </div>
-              <div className="mt-2 flex items-center justify-between">
+            <div className="h-full flex-1 flex flex-col">
+              <div className="mb-4 flex items-center space-x-4 mx-auto border border w-min px-3 py-[0.35rem] rounded-md bg-gray-800 border-gray-800">
                 <button
-                  onClick={() => setSideMenuIsVisible(true)}
-                  className="rounded-full p-2 transition-colors ease-in-out dark:hover:bg-gray-800"
+                  onClick={() => setActiveTab('overview')}
+                  className={`rounded-md px-4 py-2 transition-colors ease-in-out ${
+                    activeTab === 'overview'
+                      ? 'bg-teal-500 text-white'
+                      : ' text-gray-800 hover:bg-gray-300 dark:bg-gray-700/20 dark:text-gray-200 dark:hover:bg-gray-700'
+                  }`}
                 >
-                  <FaArrowLeftLong size={24} className="text-teal-500" />
+                  Overview
                 </button>
+                <button
+                  onClick={() => setActiveTab('alternatives')}
+                  className={`rounded-md px-4 py-2 transition-colors ease-in-out ${
+                    activeTab === 'alternatives'
+                      ? 'bg-teal-500 text-white'
+                      : 'text-gray-800 hover:bg-gray-300 dark:bg-gray- dark:text-gray-200 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  Alternatives
+                </button>
+              </div>
 
-                {/* TWO BUTTONS HERE */}
-                <div>
+              <div className="response-container bg-gray-800 rounded-md border border-gray-800 max-h-[40vh] overflow-y-scroll">
+                {activeTab === 'overview' ? (
+                  <div className="p-4">{latestAIResponse.overview}</div>
+                ) : (
+                  <div className="p-4">
+                    <h2 className="mb-4 text-center text-2xl">
+                      {
+                        latestAIResponse.alternatives[currentAlternativeIndex]
+                          .name
+                      }
+                    </h2>
 
+                    <div>
+                      <div
+                        className="group mb-4 flex cursor-pointer items-center justify-between rounded-md bg-gray-900 border border-gray-900 hover:border-gray-700 p-2 hover:bg-gray-700 transition ease-in-out"
+                        onClick={() => toggleSection('comparison')}
+                      >
+                        <span>Comparison</span>
+                        {latestAIResponse.alternatives[currentAlternativeIndex]
+                          .comparison.isOpen ? (
+                          <FaChevronDown
+                            className="text-teal-700 group-hover:text-teal-500"
+                            size={20}
+                          />
+                        ) : (
+                          <FaChevronRight
+                            className="text-teal-700 group-hover:text-teal-500"
+                            size={20}
+                          />
+                        )}
+                      </div>
+                      {latestAIResponse.alternatives[currentAlternativeIndex]
+                        .comparison.isOpen && (
+                        <div className="mb-4 rounded-md bg-gray-700 p-4">
+                          {
+                            latestAIResponse.alternatives[
+                              currentAlternativeIndex
+                            ].comparison.content
+                          }
+                        </div>
+                      )}
+
+                      <div
+                        className="group mb-4 flex cursor-pointer items-center justify-between rounded-md bg-gray-900 border border-gray-900 hover:border-gray-700 p-2 hover:bg-gray-700 transition ease-in-out"
+                        onClick={() => toggleSection('ingredients')}
+                      >
+                        <span>Ingredients</span>
+                        {latestAIResponse.alternatives[currentAlternativeIndex]
+                          .ingredients.isOpen ? (
+                          <FaChevronDown
+                            className="text-teal-700 group-hover:text-teal-500"
+                            size={20}
+                          />
+                        ) : (
+                          <FaChevronRight
+                            className="text-teal-700 group-hover:text-teal-500"
+                            size={20}
+                          />
+                        )}
+                      </div>
+
+                      {latestAIResponse.alternatives[currentAlternativeIndex]
+                        .ingredients.isOpen && (
+                        <div className="mb-4 rounded-md bg-gray-700 p-4">
+                          <ul>
+                            {latestAIResponse.alternatives[
+                              currentAlternativeIndex
+                            ].ingredients.content.map((ingredient, index) => (
+                              <li key={index} className="mb-2">
+                                {ingredient}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      <div
+                        className="group mb-4 flex cursor-pointer items-center justify-between rounded-md bg-gray-900 border border-gray-900 hover:border-gray-700 p-2 hover:bg-gray-700 transition ease-in-out"
+                        onClick={() => toggleSection('recipe')}
+                      >
+                        <span>Recipe</span>
+                        {latestAIResponse.alternatives[currentAlternativeIndex]
+                          .recipe.isOpen ? (
+                          <FaChevronDown
+                            className="text-teal-700 group-hover:text-teal-500"
+                            size={20}
+                          />
+                        ) : (
+                          <FaChevronRight
+                            className="text-teal-700 group-hover:text-teal-500"
+                            size={20}
+                          />
+                        )}
+                      </div>
+
+                      {latestAIResponse.alternatives[currentAlternativeIndex]
+                        .recipe.isOpen && (
+                        <div className="mb-4 rounded-md bg-gray-700 p-4">
+                          <ol className="list-decimal pl-4">
+                            {latestAIResponse.alternatives[
+                              currentAlternativeIndex
+                            ].recipe.content.map((step, index) => (
+                              <li key={index} className="mb-2">
+                                {step}
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="mt-4 flex items-center justify-between">
+                {activeTab === 'alternatives' && (
+                  <button
+                    onClick={() =>
+                      setCurrentAlternativeIndex((prevIndex) =>
+                        Math.max(prevIndex - 1, 0)
+                      )
+                    }
+                    className={`rounded-full p-2 transition-colors ease-in-out dark:hover:bg-gray-800 ${
+                      currentAlternativeIndex === 0
+                        ? 'opacity-50 cursor-not-allowed'
+                        : ''
+                    }`}
+                    disabled={currentAlternativeIndex === 0}
+                  >
+                    <FaArrowLeftLong size={24} className="text-teal-500" />
+                  </button>
+                )}
+
+                <div className="w-full flex items-center justify-center">
+                  <button
+                    onClick={handleBuyIngredients}
+                    className="rounded-md bg-transparent hover:bg-teal-600 px-4 py-2 text-white transition-colors ease-in-out border-2 border-teal-600 focus:ring-4 focus:ring-teal-800"
+                  >
+                    Buy Ingredients
+                  </button>
+                  <button
+                    onClick={handleBuyAlternative}
+                    className="ml-2 rounded-md bg-teal-500 border-2 border-teal-500 hover:border-teal-600 px-4 py-2 text-white transition-colors ease-in-out hover:bg-teal-600 focus:ring-4 focus:ring-teal-800"
+                  >
+                    Buy Meal
+                  </button>
                 </div>
 
-                <button
-                  onClick={() => setSideMenuIsVisible(true)}
-                  className="rounded-full p-2 transition-colors ease-in-out dark:hover:bg-gray-800"
-                >
-                  <FaArrowRightLong size={24} className="text-teal-500" />
-                </button>
+                {activeTab === 'alternatives' && (
+                  <button
+                    onClick={() =>
+                      setCurrentAlternativeIndex((prevIndex) =>
+                        Math.min(
+                          prevIndex + 1,
+                          latestAIResponse.alternatives.length - 1
+                        )
+                      )
+                    }
+                    className={`rounded-full p-2 transition-colors ease-in-out dark:hover:bg-gray-800 ${
+                      currentAlternativeIndex ===
+                      latestAIResponse.alternatives.length - 1
+                        ? 'opacity-50 cursor-not-allowed'
+                        : ''
+                    }`}
+                    disabled={
+                      currentAlternativeIndex ===
+                      latestAIResponse.alternatives.length - 1
+                    }
+                  >
+                    <FaArrowRightLong size={24} className="text-teal-500" />
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -236,11 +537,11 @@ const HomePage = () => {
 
       {/* Side Menu */}
       <div
-        className={`fixed right-0 top-0 h-screen w-1/3 border-l-2 border-l-teal-800 px-6 shadow-lg transition-transform duration-300 dark:bg-gray-900 ${
+        className={`fixed right-0 top-0 h-screen w-1/3 border-l-2 border-l-gray-700 shadow-black/30 shadow-xl px-6 shadow-lg transition-transform duration-300 dark:bg-gray-900 ${
           sideMenuIsVisible ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        <div className="mt-2 flex justify-end">
+        <div className="mt-4 flex justify-end">
           <button
             onClick={() => setSideMenuIsVisible(false)}
             className="rounded-full p-2 transition-colors ease-in-out dark:hover:bg-gray-800"
@@ -386,8 +687,8 @@ const HomePage = () => {
               />
               <label
                 htmlFor="rememberData"
-                className={`relative mr-2 size-4 cursor-pointer rounded-[0.18rem] border border-teal-700 ${
-                  rememberData ? 'bg-teal-700' : 'bg-transparent'
+                className={`relative mr-2 size-4 cursor-pointer rounded-[0.18rem] border border-teal-500 ${
+                  rememberData ? 'bg-teal-500' : 'bg-transparent'
                 }`}
               >
                 {rememberData && (
@@ -404,7 +705,7 @@ const HomePage = () => {
               </label>
               <button
                 onClick={handleRememberDataChange}
-                className="text-teal-500"
+                className="text-teal-400"
               >
                 Remember my data
               </button>

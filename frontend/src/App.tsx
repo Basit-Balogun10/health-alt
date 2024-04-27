@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
 import { ToastContainer } from 'react-toastify'
 import Home from './pages/Home'
 import Analysis from './pages/Analysis'
+import './index.css'
 
 import Aos from 'aos'
 import 'aos/dist/aos.css'

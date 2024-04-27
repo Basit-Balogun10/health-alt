@@ -33,7 +33,7 @@ RESPONSE FORMAT:
 
 - First field in response should be the analysis of the meal/junk before proceeding with the alternatives. Just briefly discuss the nutritional content and the comparison of the meal/junk to the user health record (if provided any)
 
-- Each alternative should have a name, ingredients, recipe and comparison field
+- Each alternative should have a boolean isOpen field set to false (always) and a content field that contains the name, ingredients, recipe and comparison fields
 
 - Separate each alternative from the other - including their recipes, ingredients and comparison.
 
@@ -72,7 +72,7 @@ Allergies, dietaryPreference, healthConditions and lifeStage being comma separat
             model: "claude-3-opus-20240229",
             temperature: 0.1,
             system: systemMessage,
-            max_tokens: 300,
+            max_tokens: 2024,
             messages: messageHistory,
         });
 
