@@ -2,6 +2,7 @@
   "name": "reactjs-vite-tailwindcss-boilerplate",
   "description": "This is a boilerplate build with Vite, React 18, TypeScript, Vitest, Testing Library, TailwindCSS 3, Eslint and Prettier.",
   "version": "0.1.0",
+  "proxy": "http://localhost:5000",
   "private": true,
   "author": {
     "name": "Farmceries",
@@ -21,6 +22,7 @@
     "@anthropic-ai/sdk": "^0.20.7",
     "@types/aos": "^3.0.7",
     "aos": "^2.3.4",
+    "axios": "^1.6.8",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-icons": "^5.1.0",

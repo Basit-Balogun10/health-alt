@@ -1,72 +1,16 @@
 import React, { useState, useEffect } from 'react'
+import axios from 'axios'
 import { BsCamera } from 'react-icons/bs'
 import { IoIosOptions } from 'react-icons/io'
 import { IoSendSharp, IoCloseSharp, IoChevronDown } from 'react-icons/io5'
+import { FaArrowLeftLong, FaArrowRightLong } from 'react-icons/fa6'
 import { capitalizeString } from 'utils'
-import Anthropic from '@anthropic-ai/sdk'
-
-const anthropic = new Anthropic({
-  apiKey: import.meta.env.VITE_CLAUDE_API_KEY
-})
 
 const HomePage = () => {
   const [sideMenuIsVisible, setSideMenuIsVisible] = useState(true)
   const [rememberData, setRememberData] = useState(false)
-  const systemMessage = `INTRO:
-The primary input from users is their health info (details later) and the meal/junk input. We need to do the following:
-
-1) Recommend healthier alternatives to the input meal/junk food based on the nutritional content etc.
-2) Each alternative should include the recipe, ingredients and comparison to the input meal/junk
-
-HEALTH INFO:
-The health info can include:
-- Allergies or intolerances
-- Diet goals: Weight loss or gain, Muscle building
-- Dietary Preference: Halal, Vegetarian / Vegan
-- Health conditions: Diabetes, High blood pressure, Heart disease, Amaenia
-- Fitness Levels or activity: Sedentary or active athletes etc.
-- Life stage: Pregnancy, Breastfeeding, childhood, Elderly, menstrual period etc.
-
-
-RESPONSE FORMAT:
-
-- Do not respond with any extra text outside of the JSON response. Your output should only be JSON
-
-- First field in response should be the analysis of the meal/junk before proceeding with the alternatives. Just briefly discuss the nutritional content and the comparison of the meal/junk to the user health record (if provided any)
-
-- Each alternative should have a name, ingredients, recipe and comparison field
-
-- Separate each alternative from the other - including their recipes, ingredients and comparison.
-
-- List ingredients and recipe as an array
-
-- Let's indicate why we are recommending such an alternative based on users' health info. We let them know which one of their health info are taken into consideration AND HOW IT COMPARES WITH THE JUNK OR MEAL INPUT
-
-GUIDELINES:
-1) Do not respond to anything outside of food-health, return a js object of the type: { error: string }
-2) If there are no health info provided, just analyze the junk/meal generally for the pros/cons etc. based on it's content and nutritional benefits
-3) If there are no junk/meal provided, provide the user with a daily meal plan (for all 7 days of the week) based on their health info
-4) The users are Nigerians, so only recommend Nigerian healthier meals/dishes/snacks 
-5) Do not shorten words like tablespoons, etc.
-5) Be empathetic to users like a doctor! Make use of pronouns like "your", "you"
-6) Lastly, In comparison, do well to break down medical terms to LAYMAN understanding. If there are implications or anything, use easily-relatable explanations for the readers
-
-INPUT FORMAT:
-The meal/junk to analyze or suggest alternatives to is the meal property. 
-{
-  "allergies": string,
-  "dietGoal": string,
-  "dietaryPreference": string,
-  "healthConditions": string,
-  "fitnessLevel": string,
-  "lifeStage": string,
-  "meal": string,
-}
-
-Allergies, dietaryPreference, healthConditions and lifeStage being comma separated strings`
-  const [messages, setMessages] = useState([
-    { role: 'system', content: systemMessage }
-  ])
+  const [messages, setMessages] = useState([])
+  const [latestAIResponse, setLatestAIResponse] = useState('')
   const [fitnessLevelDropdownOpen, setFitnessLevelDropdownOpen] =
     useState(false)
   const [formData, setFormData] = useState({
@@ -166,26 +110,32 @@ Allergies, dietaryPreference, healthConditions and lifeStage being comma separat
     const formIsValid = validateForm()
 
     if (formIsValid) {
-      
       console.log('Remember Data: ', rememberData)
 
       // Start the conversation with the AI
+      // Start the conversation with the AI
       const newMessage = { role: 'user', content: JSON.stringify(formData) }
-      const msg = await anthropic.messages.create({
-        model: 'claude-3-opus-20240229',
-        max_tokens: 300,
-        messages: [...messages, newMessage]
-      })
 
-      console.log('Response: ', msg)
+      try {
+        const response = await axios.post('/api/v1/ai-conversation', {
+          messageHistory: [...messages, newMessage]
+        })
 
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          role: 'assistant',
-          content: msg
-        }
-      ])
+        console.log('Response: ', response.data)
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            role: 'assistant',
+            content: JSON.parse(response.data.msg.content[0].text)
+          }
+        ])
+        setLatestAIResponse(JSON.parse(response.data.msg.content[0].text))
+      } catch (error) {
+        console.error(error)
+        alert(
+          'We encountered a problem while trying to recommend your healthier dishes. Please try again later'
+        )
+      }
     } else {
       alert(
         "Please provide your health information to help you better. We don't know you, your data is safe and doesn't leave your device"
@@ -253,6 +203,34 @@ Allergies, dietaryPreference, healthConditions and lifeStage being comma separat
               </button>
             </div>
           </div>
+
+          {latestAIResponse && (
+            <div>
+              <div className="bg-gray-800 rounded-md border border-gray-300/50">
+                {/* CONTENT HERE */}
+              </div>
+              <div className="mt-2 flex items-center justify-between">
+                <button
+                  onClick={() => setSideMenuIsVisible(true)}
+                  className="rounded-full p-2 transition-colors ease-in-out dark:hover:bg-gray-800"
+                >
+                  <FaArrowLeftLong size={24} className="text-teal-500" />
+                </button>
+
+                {/* TWO BUTTONS HERE */}
+                <div>
+
+                </div>
+
+                <button
+                  onClick={() => setSideMenuIsVisible(true)}
+                  className="rounded-full p-2 transition-colors ease-in-out dark:hover:bg-gray-800"
+                >
+                  <FaArrowRightLong size={24} className="text-teal-500" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -265,7 +243,7 @@ Allergies, dietaryPreference, healthConditions and lifeStage being comma separat
         <div className="mt-2 flex justify-end">
           <button
             onClick={() => setSideMenuIsVisible(false)}
-            className="rounded-full p-2 transition-colors dark:hover:bg-gray-800"
+            className="rounded-full p-2 transition-colors ease-in-out dark:hover:bg-gray-800"
           >
             <IoCloseSharp size={24} className="text-teal-500" />
           </button>
