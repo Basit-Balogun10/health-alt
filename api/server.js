@@ -14,6 +14,7 @@ const initializeExpressServer = async () => {
     app.use("/api/v1/ai-conversation", apiRouter);
 
     if (process.env.NODE_ENV === "production") {
+        const __dirname = path.resolve(path.dirname(""));
         app.use(express.static(path.join(__dirname, "../frontend/build")));
 
         app.get("*", (req, res) =>
