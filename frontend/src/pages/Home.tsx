@@ -48,6 +48,45 @@ interface AIResponse {
   alternatives: Alternative[]
 }
 
+const FOOD_DELIVERY_SERVICES = [
+  {
+    id: 1,
+    label: 'Chowdeck',
+    link: 'https://chowdeck.com',
+    logo: '/images/chowdeck-logo.png'
+  },
+  {
+    id: 2,
+    label: 'Doordash',
+    link: 'https://doordash.com',
+    logo: '/images/doordash-logo.png'
+  },
+  {
+    id: 3,
+    label: 'Glovo',
+    link: 'https://glovoapp.com',
+    logo: '/images/glovo-logo.png'
+  },
+  {
+    id: 4,
+    label: 'Jumia',
+    link: 'https://jumia.com.ng',
+    logo: '/images/jumia-foods-logo.png'
+  },
+  {
+    id: 5,
+    label: 'Uber Eats',
+    link: 'https://ubereats.com',
+    logo: '/images/uber-eats-logo.png'
+  },
+  {
+    id: 6,
+    label: 'Zomato',
+    link: 'https://zomato.com/india',
+    logo: '/images/zomato-logo.png'
+  }
+]
+
 const HomePage: React.FC = () => {
   const [sideMenuIsVisible, setSideMenuIsVisible] = useState<boolean>(true)
   const [rememberData, setRememberData] = useState<boolean>(false)
@@ -201,18 +240,6 @@ const HomePage: React.FC = () => {
     return true
   }
 
-  // useEffect(() => {
-  //   setLatestAIResponse((prevState) => ({
-  //     ...prevState,
-  //     alternatives: prevState.alternatives.map((alternative) => ({
-  //       ...alternative,
-  //       comparison: { isOpen: false, content: alternative.comparison },
-  //       ingredients: { isOpen: false, content: alternative.ingredients },
-  //       recipe: { isOpen: false, content: alternative.recipe }
-  //     }))
-  //   }))
-  // }, [])
-
   const transformAIResponse = (responseBody: unknown): AIResponse => {
     const { overview, alternatives } = responseBody
 
@@ -248,6 +275,10 @@ const HomePage: React.FC = () => {
         })
 
         console.log('Response: ', JSON.parse(response.data.msg.content[0].text))
+
+        if (JSON.parse(response.data.msg.content[0].text)?.error) {
+          alert('Your input has no relation with food health')
+        }
         const aiResponse = transformAIResponse(
           JSON.parse(response.data.msg.content[0].text)
         )
@@ -313,7 +344,7 @@ const HomePage: React.FC = () => {
         >
           {/* Greeting */}
           <h2 className="text-center text-4xl font-medium">
-            Good Morning, My Fannn
+            Hello, My Favorite Human
           </h2>
           {/* Input section */}
           <div className="relative">
@@ -322,7 +353,7 @@ const HomePage: React.FC = () => {
               onChange={handleFormChange}
               name="meal"
               type="text"
-              placeholder="What can I help you with"
+              placeholder="What's junk am I helping you with today?"
               className="w-full rounded-2xl border border-gray-300 py-4 pl-6 pr-24 outline-none transition-colors ease-in-out focus:outline-none focus:ring-2  focus:ring-teal-700 dark:border-teal-800 dark:bg-gray-800 dark:hover:border-teal-700"
             />
             <div className="absolute right-4 top-1/2 flex -translate-y-1/2 space-x-2">
@@ -355,7 +386,45 @@ const HomePage: React.FC = () => {
           </div>
 
           {isBuying ? (
-            <></>
+            <div className="mt-4 h-full flex-1 flex flex-col">
+              <div className="mb-2 flex items-center justify-between">
+                <div className="items-center flex justify-start">
+                  <button
+                    onClick={() => setIsBuying(false)}
+                    className="rounded-full p-2 transition-colors ease-in-out dark:hover:bg-gray-800"
+                  >
+                    <FaArrowLeftLong size={24} className="text-teal-500" />
+                  </button>
+                </div>
+
+                <h3 className="text-2xl flex-1 text-center text-teal-500 font-medium">
+                  Continue Shopping From
+                </h3>
+              </div>
+
+              <div className="mb-4 flex items-center justify-center">
+                <div className="grid grid-cols-3 gap-4">
+                  {FOOD_DELIVERY_SERVICES.map((service) => (
+                    <a
+                      key={service.id}
+                      href={service.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded-md border border-gray-300/40 px-10 py-4 hover:bg-teal-600 hover:border-teal-600 transition-colors ease-in-out"
+                    >
+                      <div className="flex flex-col items-center">
+                        <img
+                          src={service.logo}
+                          alt={service.label}
+                          className="w-24 h-24 mb-2 object-contain"
+                        />
+                        <span className="font-medium">{service.label}</span>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </div>
           ) : (
             <>
               {latestAIResponse && (

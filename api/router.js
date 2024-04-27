@@ -66,6 +66,7 @@ Allergies, dietaryPreference, healthConditions and lifeStage being comma separat
 
     try {
         const { messageHistory } = req.body;
+        console.log('history: ', messageHistory)
 
         // Call Anthropic AI to generate response message
         const msg = await anthropic.messages.create({
