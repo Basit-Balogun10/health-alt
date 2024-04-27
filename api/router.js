@@ -31,9 +31,9 @@ RESPONSE FORMAT:
 
 - Do not respond with any extra text outside of the JSON response. Your output should only be JSON
 
-- First field in response should be the analysis of the meal/junk before proceeding with the alternatives. Just briefly discuss the nutritional content and the comparison of the meal/junk to the user health record (if provided any)
+- First field in response should be the 'overview' field, which is analysis of the meal/junk before proceeding with the alternatives. Just briefly discuss the nutritional content and the comparison of the meal/junk to the user health record (if provided any)
 
-- Each alternative should have a boolean isOpen field set to false (always) and a content field that contains the name, ingredients, recipe and comparison fields
+- Each alternative should have a name, ingredients, recipe and comparison field
 
 - Separate each alternative from the other - including their recipes, ingredients and comparison.
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, MouseEvent, ChangeEvent } from 'react'
 import axios from 'axios'
 import { ClipLoader } from 'react-spinners'
 import { BsCamera } from 'react-icons/bs'
@@ -12,96 +12,90 @@ import {
 } from 'react-icons/fa6'
 import { capitalizeString } from 'utils'
 
-const HomePage = () => {
-  const [sideMenuIsVisible, setSideMenuIsVisible] = useState(true)
-  const [rememberData, setRememberData] = useState(false)
-  const [isFetchingResponse, setIsFetchingResponse] = useState(false)
-  const [messages, setMessages] = useState([])
-  const [activeTab, setActiveTab] = useState('alternatives')
-  const [currentAlternativeIndex, setCurrentAlternativeIndex] = useState(0)
-  const [latestAIResponse, setLatestAIResponse] = useState(null)
-  // const [latestAIResponse, setLatestAIResponse] = useState({
-  //   overview:
-  //     'A milky doughnut is a high-calorie, sugary snack that provides little nutritional value. It is high in refined carbohydrates and saturated fats, which can contribute to weight gain and negatively impact blood sugar control for individuals with diabetes. Additionally, the high sugar content may worsen menstrual cramps and discomfort during menstruation.',
-  //   alternatives: [
-  //     {
-  //       name: 'Oatmeal Pancakes with Banana and Honey',
-  //       ingredients: [
-  //         '1 cup oat flour',
-  //         '1 ripe banana, mashed',
-  //         '2 eggs',
-  //         '1/2 cup milk (dairy or plant-based)',
-  //         '1 tablespoon honey',
-  //         '1 teaspoon baking powder',
-  //         '1/2 teaspoon cinnamon',
-  //         'Pinch of salt'
-  //       ],
-  //       recipe: [
-  //         'In a bowl, mix together the oat flour, baking powder, cinnamon, and salt.',
-  //         'In another bowl, whisk together the mashed banana, eggs, milk, and honey.',
-  //         'Pour the wet ingredients into the dry ingredients and mix until well combined.',
-  //         'Heat a non-stick pan over medium heat and scoop 1/4 cup of batter per pancake.',
-  //         'Cook for 2-3 minutes on each side or until golden brown.',
-  //         'Serve warm with additional sliced banana and a drizzle of honey, if desired.'
-  //       ],
-  //       comparison:
-  //         'These oatmeal pancakes are a healthier alternative to a milky doughnut. Oats are a whole grain that provides fiber, which can help with weight management and blood sugar control. The use of a ripe banana adds natural sweetness and reduces the need for added sugars. This recipe is also suitable for your halal dietary preference. During menstruation, the combination of complex carbohydrates and protein can help stabilize energy levels and reduce cravings for sugary snacks.'
-  //     },
-  //     {
-  //       name: 'Baked Sweet Potato Wedges with Avocado Dip',
-  //       ingredients: [
-  //         '2 medium sweet potatoes, cut into wedges',
-  //         '1 tablespoon olive oil',
-  //         '1/2 teaspoon paprika',
-  //         'Salt and pepper to taste',
-  //         '1 ripe avocado',
-  //         '1/4 cup plain Greek yogurt',
-  //         '1 tablespoon lemon juice',
-  //         '1 small garlic clove, minced'
-  //       ],
-  //       recipe: [
-  //         'Preheat the oven to 200°C (400°F).',
-  //         'In a bowl, toss the sweet potato wedges with olive oil, paprika, salt, and pepper.',
-  //         'Arrange the wedges on a baking sheet and bake for 25-30 minutes, flipping halfway through, until crispy and tender.',
-  //         'In a separate bowl, mash the avocado and mix in the Greek yogurt, lemon juice, garlic, and a pinch of salt.',
-  //         'Serve the baked sweet potato wedges with the avocado dip on the side.'
-  //       ],
-  //       comparison:
-  //         "Baked sweet potato wedges are a nutrient-dense snack option compared to a milky doughnut. Sweet potatoes are rich in fiber, vitamins A and C, and have a lower glycemic index, which means they won't spike your blood sugar as quickly. The addition of a healthy fat source like avocado can help with satiety and nutrient absorption. Greek yogurt provides protein and probiotics, which may be beneficial for digestive health during menstruation. This snack is also halal-friendly and can support your weight loss goals and active lifestyle."
-  //     }
-  //   ]
-  // })
+interface FormData {
+  allergies: string
+  dietGoal: string
+  dietaryPreference: string
+  healthConditions: string
+  fitnessLevel: string
+  lifeStage: string
+  meal: string
+}
+
+interface AlternativeInfo {
+  name: string
+  ingredients: string[]
+  recipe: string[]
+  comparison: string[]
+}
+
+interface Alternative {
+  name: string
+  ingredients: { isOpen: boolean; content: string[] }
+  recipe: { isOpen: boolean; content: string[] }
+  comparison: { isOpen: boolean; content: string }
+}
+
+interface AlternativeInfo {
+  name: string
+  ingredients: string[]
+  recipe: string[]
+  comparison: string[]
+}
+
+interface AIResponse {
+  overview: string
+  alternatives: Alternative[]
+}
+
+const HomePage: React.FC = () => {
+  const [sideMenuIsVisible, setSideMenuIsVisible] = useState<boolean>(true)
+  const [rememberData, setRememberData] = useState<boolean>(false)
+  const [isFetchingResponse, setIsFetchingResponse] = useState<boolean>(false)
+  const [isBuying, setIsBuying] = useState(false)
+  const [messages, setMessages] = useState<{ role: string; content: string }[]>(
+    []
+  )
+  const [activeTab, setActiveTab] = useState<'alternatives' | 'overview'>(
+    'alternatives'
+  )
+  const [currentAlternativeIndex, setCurrentAlternativeIndex] =
+    useState<number>(0)
+  const [latestAIResponse, setLatestAIResponse] = useState<AIResponse | null>(
+    null
+  )
 
   const handleBuyIngredients = () => {
     console.log(
       'Buy ingredients:',
-      latestAIResponse.alternatives[currentAlternativeIndex]
+      latestAIResponse?.alternatives[currentAlternativeIndex]
     )
 
-    
+    setIsBuying(true)
   }
 
   const handleBuyAlternative = () => {
     console.log(
       'Buy alternative:',
-      latestAIResponse.alternatives[currentAlternativeIndex]
+      latestAIResponse?.alternatives[currentAlternativeIndex]
     )
+
+    setIsBuying(true)
   }
 
-  const toggleSection = (section) => {
+  const toggleSection = (section: 'comparison' | 'ingredients' | 'recipe') => {
     console.log('toggling...', section)
     setLatestAIResponse((prevState) => ({
-      ...prevState,
-      alternatives: prevState.alternatives.map((alternative, index) => {
+      ...prevState!,
+      alternatives: prevState!.alternatives.map((alternative, index) => {
         if (index === currentAlternativeIndex) {
           console.log(index, currentAlternativeIndex)
 
-          console.log('section: ', alternative, alternative[section].isOpen)
           return {
             ...alternative,
             [section]: {
               ...alternative[section],
-              ...{ isOpen: !alternative[section].isOpen }
+              ...{ isOpen: !(alternative[section] as AlternativeInfo).isOpen }
             }
           }
         }
@@ -110,21 +104,9 @@ const HomePage = () => {
     }))
   }
 
-  // useEffect(() => {
-  //   setLatestAIResponse((prevState) => ({
-  //     ...prevState,
-  //     alternatives: prevState.alternatives.map((alternative) => ({
-  //       ...alternative,
-  //       comparison: { isOpen: false, content: alternative.comparison },
-  //       ingredients: { isOpen: false, content: alternative.ingredients },
-  //       recipe: { isOpen: false, content: alternative.recipe }
-  //     }))
-  //   }))
-  // }, [])
-
   const [fitnessLevelDropdownOpen, setFitnessLevelDropdownOpen] =
-    useState(false)
-  const [formData, setFormData] = useState({
+    useState<boolean>(false)
+  const [formData, setFormData] = useState<FormData>({
     allergies: '',
     dietGoal: '',
     dietaryPreference: '',
@@ -147,12 +129,13 @@ const HomePage = () => {
     }
   }, [])
 
-  const handleRememberDataChange = (e) => {
+  const handleRememberDataChange = (
+    e: MouseEvent<HTMLButtonElement> | ChangeEvent<HTMLInputElement>
+  ) => {
     e.preventDefault()
     setRememberData(!rememberData)
     localStorage.setItem('rememberData', JSON.stringify(!rememberData))
 
-    // Using the fact that setState actions are asynchronous (so remeberData won't be updated yet, hence using !rememberData)
     if (!rememberData) {
       localStorage.setItem('formData', JSON.stringify(formData))
     } else {
@@ -160,23 +143,25 @@ const HomePage = () => {
     }
   }
 
-  const handleFitnessLevelChange = (level) => {
+  const handleFitnessLevelChange = (level: string) => {
     setFormData({ ...formData, fitnessLevel: level })
-    setFitnessLevelDropdownOpen(false) // Close the dropdown after selection
+    setFitnessLevelDropdownOpen(false)
   }
 
-  const handleFormChange = (e) => {
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target
     if (type === 'checkbox') {
       if (checked) {
         setFormData((prevData) => ({
           ...prevData,
-          [name]: [...prevData[name], value]
+          [name]: [...prevData[name as keyof FormData], value]
         }))
       } else {
         setFormData((prevData) => ({
           ...prevData,
-          [name]: prevData[name].filter((item) => item !== value)
+          [name]: prevData[name as keyof FormData].filter(
+            (item) => item !== value
+          )
         }))
       }
     } else {
@@ -216,16 +201,45 @@ const HomePage = () => {
     return true
   }
 
+  // useEffect(() => {
+  //   setLatestAIResponse((prevState) => ({
+  //     ...prevState,
+  //     alternatives: prevState.alternatives.map((alternative) => ({
+  //       ...alternative,
+  //       comparison: { isOpen: false, content: alternative.comparison },
+  //       ingredients: { isOpen: false, content: alternative.ingredients },
+  //       recipe: { isOpen: false, content: alternative.recipe }
+  //     }))
+  //   }))
+  // }, [])
+
+  const transformAIResponse = (responseBody: unknown): AIResponse => {
+    const { overview, alternatives } = responseBody
+
+    const transformedAlternatives: Alternative[] = alternatives.map(
+      (alt: unknown) => ({
+        name: alt.name,
+        comparison: { isOpen: false, content: alt.comparison },
+        ingredients: { isOpen: false, content: alt.ingredients },
+        recipe: { isOpen: false, content: alt.recipe }
+      })
+    )
+
+    const transformedResponse: AIResponse = {
+      overview,
+      alternatives: transformedAlternatives
+    }
+
+    return transformedResponse
+  }
+
   const startConversationWithAI = async () => {
-    // Ensure that the meal input is not empty and at least one health info is provided
     const formIsValid = validateForm()
 
     if (formIsValid) {
       setIsFetchingResponse(true)
       console.log('Remember Data: ', rememberData)
 
-      // Start the conversation with the AI
-      // Start the conversation with the AI
       const newMessage = { role: 'user', content: JSON.stringify(formData) }
 
       try {
@@ -233,7 +247,13 @@ const HomePage = () => {
           messageHistory: [...messages, newMessage]
         })
 
-        console.log('Response: ', response.data)
+        console.log('Response: ', JSON.parse(response.data.msg.content[0].text))
+        const aiResponse = transformAIResponse(
+          JSON.parse(response.data.msg.content[0].text)
+        )
+
+        setLatestAIResponse(aiResponse)
+
         setMessages((prevMessages) => [
           ...prevMessages,
           {
@@ -241,7 +261,7 @@ const HomePage = () => {
             content: JSON.parse(response.data.msg.content[0].text)
           }
         ])
-        setLatestAIResponse(JSON.parse(response.data.msg.content[0].text))
+        // setLatestAIResponse(JSON.parse(response.data.msg.content[0].text))
       } catch (error) {
         console.error(error)
         alert(
@@ -334,210 +354,225 @@ const HomePage = () => {
             </div>
           </div>
 
-          {latestAIResponse && (
-            <div className="h-full flex-1 flex flex-col">
-              <div className="mb-4 flex items-center space-x-4 mx-auto border border w-min px-3 py-[0.35rem] rounded-md bg-gray-800 border-gray-800">
-                <button
-                  onClick={() => setActiveTab('overview')}
-                  className={`rounded-md px-4 py-2 transition-colors ease-in-out ${
-                    activeTab === 'overview'
-                      ? 'bg-teal-500 text-white'
-                      : ' text-gray-800 hover:bg-gray-300 dark:bg-gray-700/20 dark:text-gray-200 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  Overview
-                </button>
-                <button
-                  onClick={() => setActiveTab('alternatives')}
-                  className={`rounded-md px-4 py-2 transition-colors ease-in-out ${
-                    activeTab === 'alternatives'
-                      ? 'bg-teal-500 text-white'
-                      : 'text-gray-800 hover:bg-gray-300 dark:bg-gray- dark:text-gray-200 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  Alternatives
-                </button>
-              </div>
+          {isBuying ? (
+            <></>
+          ) : (
+            <>
+              {latestAIResponse && (
+                <div className="h-full flex-1 flex flex-col">
+                  <div className="mb-4 flex items-center space-x-4 mx-auto border border w-min px-3 py-[0.35rem] rounded-md bg-gray-800 border-gray-800">
+                    <button
+                      onClick={() => setActiveTab('overview')}
+                      className={`rounded-md px-4 py-2 transition-colors ease-in-out ${
+                        activeTab === 'overview'
+                          ? 'bg-teal-500 text-white'
+                          : ' text-gray-800 hover:bg-gray-300 dark:bg-gray-700/20 dark:text-gray-200 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      Overview
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('alternatives')}
+                      className={`rounded-md px-4 py-2 transition-colors ease-in-out ${
+                        activeTab === 'alternatives'
+                          ? 'bg-teal-500 text-white'
+                          : 'text-gray-800 hover:bg-gray-300 dark:bg-gray- dark:text-gray-200 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      Alternatives
+                    </button>
+                  </div>
 
-              <div className="response-container bg-gray-800 rounded-md border border-gray-800 max-h-[40vh] overflow-y-scroll">
-                {activeTab === 'overview' ? (
-                  <div className="p-4">{latestAIResponse.overview}</div>
-                ) : (
-                  <div className="p-4">
-                    <h2 className="mb-4 text-center text-2xl">
-                      {
-                        latestAIResponse.alternatives[currentAlternativeIndex]
-                          .name
-                      }
-                    </h2>
-
-                    <div>
-                      <div
-                        className="group mb-4 flex cursor-pointer items-center justify-between rounded-md bg-gray-900 border border-gray-900 hover:border-gray-700 p-2 hover:bg-gray-700 transition ease-in-out"
-                        onClick={() => toggleSection('comparison')}
-                      >
-                        <span>Comparison</span>
-                        {latestAIResponse.alternatives[currentAlternativeIndex]
-                          .comparison.isOpen ? (
-                          <FaChevronDown
-                            className="text-teal-700 group-hover:text-teal-500"
-                            size={20}
-                          />
-                        ) : (
-                          <FaChevronRight
-                            className="text-teal-700 group-hover:text-teal-500"
-                            size={20}
-                          />
-                        )}
-                      </div>
-                      {latestAIResponse.alternatives[currentAlternativeIndex]
-                        .comparison.isOpen && (
-                        <div className="mb-4 rounded-md bg-gray-700 p-4">
+                  <div className="response-container bg-gray-800 rounded-md border border-gray-800 max-h-[40vh] overflow-y-scroll">
+                    {activeTab === 'overview' ? (
+                      <div className="p-4">{latestAIResponse.overview}</div>
+                    ) : (
+                      <div className="p-4">
+                        <h2 className="mb-4 text-center text-2xl">
                           {
                             latestAIResponse.alternatives[
                               currentAlternativeIndex
-                            ].comparison.content
+                            ].name
                           }
-                        </div>
-                      )}
+                        </h2>
 
-                      <div
-                        className="group mb-4 flex cursor-pointer items-center justify-between rounded-md bg-gray-900 border border-gray-900 hover:border-gray-700 p-2 hover:bg-gray-700 transition ease-in-out"
-                        onClick={() => toggleSection('ingredients')}
-                      >
-                        <span>Ingredients</span>
-                        {latestAIResponse.alternatives[currentAlternativeIndex]
-                          .ingredients.isOpen ? (
-                          <FaChevronDown
-                            className="text-teal-700 group-hover:text-teal-500"
-                            size={20}
-                          />
-                        ) : (
-                          <FaChevronRight
-                            className="text-teal-700 group-hover:text-teal-500"
-                            size={20}
-                          />
-                        )}
-                      </div>
-
-                      {latestAIResponse.alternatives[currentAlternativeIndex]
-                        .ingredients.isOpen && (
-                        <div className="mb-4 rounded-md bg-gray-700 p-4">
-                          <ul>
+                        <div>
+                          <div
+                            className="group mb-4 flex cursor-pointer items-center justify-between rounded-md bg-gray-900 border border-gray-900 hover:border-gray-700 p-2 hover:bg-gray-700 transition ease-in-out"
+                            onClick={() => toggleSection('comparison')}
+                          >
+                            <span>Comparison</span>
                             {latestAIResponse.alternatives[
                               currentAlternativeIndex
-                            ].ingredients.content.map((ingredient, index) => (
-                              <li key={index} className="mb-2">
-                                {ingredient}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      <div
-                        className="group mb-4 flex cursor-pointer items-center justify-between rounded-md bg-gray-900 border border-gray-900 hover:border-gray-700 p-2 hover:bg-gray-700 transition ease-in-out"
-                        onClick={() => toggleSection('recipe')}
-                      >
-                        <span>Recipe</span>
-                        {latestAIResponse.alternatives[currentAlternativeIndex]
-                          .recipe.isOpen ? (
-                          <FaChevronDown
-                            className="text-teal-700 group-hover:text-teal-500"
-                            size={20}
-                          />
-                        ) : (
-                          <FaChevronRight
-                            className="text-teal-700 group-hover:text-teal-500"
-                            size={20}
-                          />
-                        )}
-                      </div>
+                            ].comparison.isOpen ? (
+                              <FaChevronDown
+                                className="text-teal-700 group-hover:text-teal-500"
+                                size={20}
+                              />
+                            ) : (
+                              <FaChevronRight
+                                className="text-teal-700 group-hover:text-teal-500"
+                                size={20}
+                              />
+                            )}
+                          </div>
+                          {latestAIResponse.alternatives[
+                            currentAlternativeIndex
+                          ].comparison.isOpen && (
+                            <div className="mb-4 rounded-md bg-gray-700 p-4">
+                              {
+                                latestAIResponse.alternatives[
+                                  currentAlternativeIndex
+                                ].comparison.content
+                              }
+                            </div>
+                          )}
 
-                      {latestAIResponse.alternatives[currentAlternativeIndex]
-                        .recipe.isOpen && (
-                        <div className="mb-4 rounded-md bg-gray-700 p-4">
-                          <ol className="list-decimal pl-4">
+                          <div
+                            className="group mb-4 flex cursor-pointer items-center justify-between rounded-md bg-gray-900 border border-gray-900 hover:border-gray-700 p-2 hover:bg-gray-700 transition ease-in-out"
+                            onClick={() => toggleSection('ingredients')}
+                          >
+                            <span>Ingredients</span>
                             {latestAIResponse.alternatives[
                               currentAlternativeIndex
-                            ].recipe.content.map((step, index) => (
-                              <li key={index} className="mb-2">
-                                {step}
-                              </li>
-                            ))}
-                          </ol>
+                            ].ingredients.isOpen ? (
+                              <FaChevronDown
+                                className="text-teal-700 group-hover:text-teal-500"
+                                size={20}
+                              />
+                            ) : (
+                              <FaChevronRight
+                                className="text-teal-700 group-hover:text-teal-500"
+                                size={20}
+                              />
+                            )}
+                          </div>
+
+                          {latestAIResponse.alternatives[
+                            currentAlternativeIndex
+                          ].ingredients.isOpen && (
+                            <div className="mb-4 rounded-md bg-gray-700 p-4">
+                              <ul>
+                                {latestAIResponse.alternatives[
+                                  currentAlternativeIndex
+                                ].ingredients.content.map(
+                                  (ingredient, index) => (
+                                    <li key={index} className="mb-2">
+                                      {ingredient}
+                                    </li>
+                                  )
+                                )}
+                              </ul>
+                            </div>
+                          )}
+                          <div
+                            className="group mb-4 flex cursor-pointer items-center justify-between rounded-md bg-gray-900 border border-gray-900 hover:border-gray-700 p-2 hover:bg-gray-700 transition ease-in-out"
+                            onClick={() => toggleSection('recipe')}
+                          >
+                            <span>Recipe</span>
+                            {latestAIResponse.alternatives[
+                              currentAlternativeIndex
+                            ].recipe.isOpen ? (
+                              <FaChevronDown
+                                className="text-teal-700 group-hover:text-teal-500"
+                                size={20}
+                              />
+                            ) : (
+                              <FaChevronRight
+                                className="text-teal-700 group-hover:text-teal-500"
+                                size={20}
+                              />
+                            )}
+                          </div>
+
+                          {latestAIResponse.alternatives[
+                            currentAlternativeIndex
+                          ].recipe.isOpen && (
+                            <div className="mb-4 rounded-md bg-gray-700 p-4">
+                              <ol className="list-decimal pl-4">
+                                {latestAIResponse.alternatives[
+                                  currentAlternativeIndex
+                                ].recipe.content.map((step, index) => (
+                                  <li key={index} className="mb-2">
+                                    {step}
+                                  </li>
+                                ))}
+                              </ol>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-              <div className="mt-4 flex items-center justify-between">
-                {activeTab === 'alternatives' && (
-                  <button
-                    onClick={() =>
-                      setCurrentAlternativeIndex((prevIndex) =>
-                        Math.max(prevIndex - 1, 0)
-                      )
-                    }
-                    className={`rounded-full p-2 transition-colors ease-in-out dark:hover:bg-gray-800 ${
-                      currentAlternativeIndex === 0
-                        ? 'opacity-50 cursor-not-allowed'
-                        : ''
-                    }`}
-                    disabled={currentAlternativeIndex === 0}
-                  >
-                    <FaArrowLeftLong size={24} className="text-teal-500" />
-                  </button>
-                )}
+                  <div className="mt-4 flex items-center justify-between">
+                    {activeTab === 'alternatives' && (
+                      <button
+                        onClick={() =>
+                          setCurrentAlternativeIndex((prevIndex) =>
+                            Math.max(prevIndex - 1, 0)
+                          )
+                        }
+                        className={`rounded-full p-2 transition-colors ease-in-out dark:hover:bg-gray-800 ${
+                          currentAlternativeIndex === 0
+                            ? 'opacity-50 cursor-not-allowed'
+                            : ''
+                        }`}
+                        disabled={currentAlternativeIndex === 0}
+                      >
+                        <FaArrowLeftLong size={24} className="text-teal-500" />
+                      </button>
+                    )}
 
-                <div className="w-full flex items-center justify-center">
-                  <button
-                    onClick={handleBuyIngredients}
-                    className="rounded-md bg-transparent hover:bg-teal-600 px-4 py-2 text-white transition-colors ease-in-out border-2 border-teal-600 focus:ring-4 focus:ring-teal-800"
-                  >
-                    Buy Ingredients
-                  </button>
-                  <button
-                    onClick={handleBuyAlternative}
-                    className="ml-2 rounded-md bg-teal-500 border-2 border-teal-500 hover:border-teal-600 px-4 py-2 text-white transition-colors ease-in-out hover:bg-teal-600 focus:ring-4 focus:ring-teal-800"
-                  >
-                    Buy Meal
-                  </button>
-                </div>
+                    <div className="w-full flex items-center justify-center space-x-4">
+                      <button
+                        onClick={handleBuyIngredients}
+                        className="rounded-md bg-transparent hover:bg-teal-600 px-4 py-2 text-white transition-colors ease-in-out border-2 border-teal-600 focus:ring-4 focus:ring-teal-800"
+                      >
+                        Buy Ingredients
+                      </button>
+                      <button
+                        onClick={handleBuyAlternative}
+                        className="rounded-md bg-teal-500 border-2 border-teal-500 hover:border-teal-600 px-10 py-2 text-white transition-colors ease-in-out hover:bg-teal-600 focus:ring-4 focus:ring-teal-800"
+                      >
+                        Buy Meal
+                      </button>
+                    </div>
 
-                {activeTab === 'alternatives' && (
-                  <button
-                    onClick={() =>
-                      setCurrentAlternativeIndex((prevIndex) =>
-                        Math.min(
-                          prevIndex + 1,
+                    {activeTab === 'alternatives' && (
+                      <button
+                        onClick={() =>
+                          setCurrentAlternativeIndex((prevIndex) =>
+                            Math.min(
+                              prevIndex + 1,
+                              latestAIResponse.alternatives.length - 1
+                            )
+                          )
+                        }
+                        className={`rounded-full p-2 transition-colors ease-in-out dark:hover:bg-gray-800 ${
+                          currentAlternativeIndex ===
                           latestAIResponse.alternatives.length - 1
-                        )
-                      )
-                    }
-                    className={`rounded-full p-2 transition-colors ease-in-out dark:hover:bg-gray-800 ${
-                      currentAlternativeIndex ===
-                      latestAIResponse.alternatives.length - 1
-                        ? 'opacity-50 cursor-not-allowed'
-                        : ''
-                    }`}
-                    disabled={
-                      currentAlternativeIndex ===
-                      latestAIResponse.alternatives.length - 1
-                    }
-                  >
-                    <FaArrowRightLong size={24} className="text-teal-500" />
-                  </button>
-                )}
-              </div>
-            </div>
+                            ? 'opacity-50 cursor-not-allowed'
+                            : ''
+                        }`}
+                        disabled={
+                          currentAlternativeIndex ===
+                          latestAIResponse.alternatives.length - 1
+                        }
+                      >
+                        <FaArrowRightLong size={24} className="text-teal-500" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
 
       {/* Side Menu */}
       <div
-        className={`fixed right-0 top-0 h-screen w-1/3 border-l-2 border-l-gray-700 shadow-black/30 shadow-xl px-6 shadow-lg transition-transform duration-300 dark:bg-gray-900 ${
+        className={`fixed right-0 top-0 h-screen w-1/3 border-l-2 border-l-gray-700 shadow-black/30 px-6 shadow-lg transition-transform duration-300 dark:bg-gray-900 ${
           sideMenuIsVisible ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
