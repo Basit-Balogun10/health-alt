@@ -277,8 +277,12 @@ const HomePage: React.FC = () => {
           'Loading from cache: ',
           localData[formData.meal.toLowerCase()]
         )
-        setLatestAIResponse(localData[formData.meal.toLowerCase()])
-
+        setIsFetchingResponse(true)
+        setTimeout(() => {
+          setIsFetchingResponse(false)
+          setLatestAIResponse(localData[formData.meal.toLowerCase()])
+        }, [2000])
+        
         return
       }
       setIsFetchingResponse(true)
