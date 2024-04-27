@@ -282,7 +282,7 @@ const HomePage: React.FC = () => {
           setIsFetchingResponse(false)
           setLatestAIResponse(localData[formData.meal.toLowerCase()])
         }, [2000])
-        
+
         return
       }
       setIsFetchingResponse(true)
